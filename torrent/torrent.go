@@ -6,6 +6,7 @@ import(
 	"crypto/sha1"
 	"strings"
 	"net/http"
+	"os"
 	"io/ioutil"
 )
 var ANNOUCEREG = regexp.MustCompile("(udp|https?)://([^/^:]+)")
@@ -73,6 +74,22 @@ func (t *Torrent)GetTracker() string{
 func (t *Torrent)GetFilePath() string{
 	return t.filepath
 }
+func (t *Torrent)GetLength()  int64{
+	return t.length
+}
+func (t *Torrent)GetName()  string{
+	return t.name
+}
+func (t *Torrent)GetPrivate()  bool{
+	return t.private
+}
+func (t *Torrent)GetInfohash()  string{
+	return t.infohash
+}
+func (t *Torrent)GetAnnouce()  string{
+	return t.announce
+}
+
 func (t *Torrent)SetTracker(){
 	if t.announce != "" {
 		t.tracker = ANNOUCEREG.FindStringSubmatch(t.announce)[2]
@@ -80,6 +97,7 @@ func (t *Torrent)SetTracker(){
 	}	
 }
 //TODO: figure out how to talk to trackers
+//This is actually really hard, I might never do it.
 func (t *Torrent)ScrapeTorrent() {
 	reqstring := fmt.Sprintf("%s?info_hash=%s?peer_id=%s",t.scrape,t.infohash,"-LT2060-")
 	resp,err := http.Get(reqstring)
@@ -112,6 +130,18 @@ func (t *Torrent)ScrapeTorrent() {
 		defer resp.Body.Close()
 	}
 	
+}
+func OpenTfile(path string) ([]byte,bool){
+	f, err := os.Open(path)
+	if err != nil {
+		return nil,false
+	}
+	defer f.Close()
+	b,err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil,false
+	}
+	return b,true
 }
 func (t *Torrent)PrintTorrentInfo() {
 	fmt.Println("File: ",t.filepath)

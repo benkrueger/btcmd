@@ -5,37 +5,36 @@ import(
 	"os"
 	"flag"
 	"./sorter"
+	"regexp"
 )
 /*
-	tsort [-i path] [-o path] [-d] [-a] [-s tracker|size|name]
+	tsort [-i path] [-o path] [-d] [-a] [-f]
 	-i - input
-	-o = output
-	-d = dry run
-	-dd = deduplicate
+	-o = output. 
+	-dr = dry run
+	-dd = deduplicate torrent content
+	-s = sort torrents to output dir
 	-a = archive (gzip)
-	-s = sort criteria. Options are [tracker|alpha|content]
-	-g = torrent grep.
+	-f = field of torrent you wish to sort/search by. ex: -f  tracker sorts all files one dir deep by tracker  
+	-g = torrent grep. -g <pattern> 
 	-p = find and prune dead Torrents
+	-d = run as a service. Listen to torrents coming into input folder and sort them to output.
 */
 func main() {
 
 	input_dir_ptr := flag.String("i","./","input path")
 	output_dir_ptr := flag.String("o","./","output path")
+	field_ptr := flag.String("f","","Field of torrent you wish to sort/search with.")
 	dry_run := flag.Bool("d",false,"Dry Run option")
 	deduplicate_mode := flag.Bool("dd",false,"Deduplicate mode")
 	archive_mode := flag.Bool("a",false,"Archive mode")
-	sort_criteria := flag.String("s","","Sort criteria. Options are [tracker|alpha|content]")
+	search_pattern := flag.String("g","","Pattern to search in torrent file")
 	prune_mode := flag.Bool("p",false,"find and prune dead Torrents")
+	sort_mode := flag.Bool("s",false,"Sort to output")
 	flag.Parse()
-
-	dir,_ := exists(*input_dir_ptr)
-	if !dir {
-		fmt.Println("Specify valid input dir.")
-		os.Exit(1)
-	}
-	dir,_ = exists(*output_dir_ptr)
-	if !dir {
-		fmt.Println("Specify valid output dir.")
+	ok,err := CheckInput()
+	if(!ok || err != nil){
+		fmt.Println(err)
 		os.Exit(1)
 	}
 
@@ -44,14 +43,12 @@ func main() {
 	fmt.Println("Dry run: ",*dry_run)
 	fmt.Println("Deduplicate: ",*deduplicate_mode)
 	fmt.Println("Archive: ",*archive_mode)
-	fmt.Println("Sort criteria: ",*sort_criteria)
+	fmt.Println("Sort criteria: ",*field_ptr)
 	fmt.Println("Prune mode: ",*prune_mode)
-	sorter.SetInpath(*input_dir_ptr)
-	sorter.SetOutpath(*output_dir_ptr)
+	fmt.Println("Run as daemon:",*service_mode)
+	
+	if(){
 
-
-	if *dry_run {
-		sorter.PrintDryRun()
 	}
 	os.Exit(0)
 }
@@ -62,4 +59,21 @@ func exists(path string) (bool, error) {
     if err == nil { return true, nil }
     if os.IsNotExist(err) { return false, nil }
     return true, err
+}
+
+func CheckInput(inpath string,outpath string,field string,search_pattern string)(bool,error,*Regexp){
+	dir,err := exists(inpath)
+	if !dir {
+		fmt.Println("Specify valid input dir.")
+		return false,err,nil
+	}
+	dir,_ = exists(outpath)
+	if !dir {
+		fmt.Println("Specify valid output dir.")
+		return false,err,nil
+	}
+	search_re := regexp.MustCompilePOSIX(search_pattern)
+
+
+
 }
