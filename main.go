@@ -12,12 +12,10 @@ import(
 	-i - input
 	-o = output. 
 	-dr = dry run
-	-dd = deduplicate torrent content
 	-s = sort torrents to output dir
-	-a = archive (gzip)
 	-f = field of torrent you wish to sort/search by. ex: -f  tracker sorts all files one dir deep by tracker  
 	-g = torrent grep. -g <pattern> 
-	-p = find and prune dead Torrents
+	-p = find dead Torrents
 	-d = run as a service. Listen to torrents coming into input folder and sort them to output.
 */
 func main() {
@@ -25,14 +23,13 @@ func main() {
 	input_dir_ptr := flag.String("i","./","input path")
 	output_dir_ptr := flag.String("o","./","output path")
 	field_ptr := flag.String("f","","Field of torrent you wish to sort/search with.")
-	dry_run := flag.Bool("d",false,"Dry Run option")
-	deduplicate_mode := flag.Bool("dd",false,"Deduplicate mode")
-	archive_mode := flag.Bool("a",false,"Archive mode")
+	dry_run := flag.Bool("dr",false,"Dry Run option")
 	search_pattern := flag.String("g","","Pattern to search in torrent file")
-	prune_mode := flag.Bool("p",false,"find and prune dead Torrents")
-	sort_mode := flag.Bool("s",false,"Sort to output")
+	prune_mode := flag.Bool("p",false,"find dead Torrents")
+	sort_mode := flag.Bool("s",false,"Sort to output directory")
+	service_mode := flag.Bool("d",false,"Run as daemon/service")
 	flag.Parse()
-	ok,err := CheckInput()
+	ok, err, search_regex := CheckInput(*input_dir_ptr,*output_dir_ptr,*field_ptr,*search_pattern)
 	if(!ok || err != nil){
 		fmt.Println(err)
 		os.Exit(1)
@@ -41,15 +38,12 @@ func main() {
 	fmt.Println("Input path: ",*input_dir_ptr)
 	fmt.Println("Output path: ",*output_dir_ptr)
 	fmt.Println("Dry run: ",*dry_run)
-	fmt.Println("Deduplicate: ",*deduplicate_mode)
-	fmt.Println("Archive: ",*archive_mode)
-	fmt.Println("Sort criteria: ",*field_ptr)
+	fmt.Println("Target Field: ",*field_ptr)
 	fmt.Println("Prune mode: ",*prune_mode)
+	fmt.Println("Search Pattern",*search_pattern)
 	fmt.Println("Run as daemon:",*service_mode)
-	
-	if(){
 
-	}
+	
 	os.Exit(0)
 }
 
@@ -61,7 +55,7 @@ func exists(path string) (bool, error) {
     return true, err
 }
 
-func CheckInput(inpath string,outpath string,field string,search_pattern string)(bool,error,*Regexp){
+func CheckInput(inpath string,outpath string,field string,search_pattern string)(bool,error,*regexp.Regexp){
 	dir,err := exists(inpath)
 	if !dir {
 		fmt.Println("Specify valid input dir.")
@@ -72,8 +66,6 @@ func CheckInput(inpath string,outpath string,field string,search_pattern string)
 		fmt.Println("Specify valid output dir.")
 		return false,err,nil
 	}
-	search_re := regexp.MustCompilePOSIX(search_pattern)
-
-
+	search_re := regexp.Compile(search_pattern)
 
 }

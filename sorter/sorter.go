@@ -5,7 +5,7 @@ import(
 	"fmt"
 	"path/filepath"
 	"strings"
-	"../torrent"
+	/*"../torrent"*/
 )
 
 var inpath string
@@ -40,12 +40,7 @@ func FindTorrentFiles() bool {
 	return true
 }
 
-
-func SortByTracker() bool {
-	return true
-}
-//Sorting by tracker is all I can think of how to do....
-func Sort(mode *string, inpath string, outpath string, dryrun bool) bool{
+func Sort(mode *string, inpath string, outpath string,field string) bool{
 	return false
 }
 
