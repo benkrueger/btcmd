@@ -1,11 +1,10 @@
 package search
 
 import(
-	"fmt"
-	"path/filepath"
-	"io/ioutil"
-	"strings"
-	"os"
 	"../torrent"
+	"regexp"
 )
 
+func SearchTorrent(t *torrent.Torrent,r *regexp.Regexp,f *torrent.Field)(string, bool){
+	
+}
