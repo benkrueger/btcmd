@@ -22,14 +22,13 @@ type Torrent struct {
 	name     string
 	length   int64
 	contents []string
-	infohash string
+	infohash_str string
 	private  bool
 }
 
-//Represents the different searchable fields of a torrent file
-type Field int64
-
-const ()
+type beincodeInfo struct {
+	Pieces string 
+}
 
 func (t *Torrent) SetFilepath(s string) {
 	t.filepath = s
@@ -106,41 +105,7 @@ func (t *Torrent) SetTracker() {
 	}
 }
 
-//TODO: figure out how to talk to trackers
-//This is actually really hard, I might never do it.
-func (t *Torrent) ScrapeTorrent() {
-	reqstring := fmt.Sprintf("%s?info_hash=%s?peer_id=%s", t.scrape, t.infohash, "-LT2060-")
-	resp, err := http.Get(reqstring)
-	if err != nil {
-		fmt.Println("Could not scrape, request failed.")
 
-	} else {
-		typestring := "none"
-		fmt.Println("Header :", resp.Header)
-		if resp.Header["Content-Type"] != nil {
-			typestring = resp.Header["Content-Type"][0]
-		}
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			fmt.Println("Could not decipher body")
-		}
-		switch typestring {
-		case "text/plain":
-			fmt.Println("Text response:", string(body))
-			break
-		case "text/html":
-			fmt.Println("HTML response:", string(body))
-			break
-		case "none":
-			fmt.Println("No response possible")
-		default:
-			fmt.Println("IDK response:", string(body))
-		}
-
-		defer resp.Body.Close()
-	}
-
-}
 func OpenTfile(path string) ([]byte, bool) {
 	f, err := os.Open(path)
 	if err != nil {
