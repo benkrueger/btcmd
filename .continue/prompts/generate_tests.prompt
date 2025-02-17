@@ -1,0 +1,4 @@
+name: Generate Tests
+description: Generate a test file.
+---
+Utilizing the context, write a test file for the code given. Try your best to get good code coverage and write modular independent unit tests.

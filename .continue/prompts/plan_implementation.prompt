@@ -1,0 +1,7 @@
+name: Plan Implementation
+description: Plan the implementation of a project from a readme.
+---
+Go over the contents of the readme of this codebase. Come up with a plan to implement it and write it to a TODO.md file.
+The contents of this repo and how it is structured should also be helpful, and guide how you write your plan.
+@repo-map
+@tree

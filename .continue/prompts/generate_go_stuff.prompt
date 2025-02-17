@@ -1,0 +1,10 @@
+name: Go Chores
+description: Do stuff to setup and maintain the go programmin environment.
+---
+This repo is a go project. Go through the entire project and figure out what dependencies need to be imported, what the go mod file must be
+and what command need to be run in order to build, test and debut this project. The project looks like:
+@repo-map
+@tree
+@os
+You can run commands or search the web if necessary. Output the go mod and go package files for this codebase, and output the commands needed to install all dependencies.
+Do not output CI/CD files, we will do that later.

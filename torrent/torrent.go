@@ -2,9 +2,9 @@ package torrent
 
 import (
 	"crypto/sha1"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"regexp"
 	"strings"
@@ -15,85 +15,97 @@ import (
 var ANNOUCEREG = regexp.MustCompile("(udp|https?)://([^/^:]+)")
 
 type Torrent struct {
-	filepath string
-	announce string
-	scrape   string
-	tracker  string
-	name     string
-	length   int64
-	contents []string
-	infohash_str string
-	private  bool
+	filepath    string
+	announce    string
+	scrape      string
+	tracker     string
+	name        string
+	length      int64
+	contents    []string
+	infohashStr string
+	private     bool
 }
 
 type beincodeInfo struct {
-	Pieces string 
+	Pieces string
 }
 
-func (t *Torrent) SetFilepath(s string) {
-	t.filepath = s
-}
-func (t *Torrent) UnmarshalTfBytes(b []byte) {
+func (t *Torrent) UnmarshalTfBytes(b []byte) error {
 	data, err := bencode.Unmarshal(b)
-	if err == nil {
-
-		buf_m_s_i := data.(map[string]interface{})
-		announce_url_str := string(buf_m_s_i["announce"].([]byte))
-		info_dict := buf_m_s_i["info"].(map[string]interface{})
-		info_bytes, _ := bencode.Marshal(info_dict)
-
-		t.infohash = fmt.Sprintf("%x", sha1.Sum([]byte(info_bytes)))
-		t.name = string(info_dict["name"].([]byte))
-
-		if info_dict["private"] != nil {
-			if info_dict["private"].(int64) == 1 {
-				t.private = true
-			}
-		} else {
-			t.private = false
-		}
-		files_list := info_dict["files"]
-		t.announce = announce_url_str
-		t.SetTracker()
-
-		if files_list != nil {
-
-			contained_files_list := files_list.([]interface{})
-			for _, f := range contained_files_list {
-
-				f_dict := f.(map[string]interface{})
-				f_paths := f_dict["path"].([]interface{})
-				f_size := f_dict["length"].(int64)
-				t.length += f_size
-				for _, p := range f_paths {
-					path_string := string(p.([]byte))
-					t.contents = append(t.contents, path_string)
-				}
-			}
-
-		} else {
-			t.length = info_dict["length"].(int64)
-		}
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal bencode data: %v", err)
 	}
+
+	buf_m_s_i, ok := data.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("unexpected type for bencode data")
+	}
+
+	announce, ok := buf_m_s_i["announce"].(string)
+	if !ok {
+		return fmt.Errorf("announce field missing or invalid")
+	}
+	t.announce = announce
+
+	// Extracting `info` dictionary and calculate info hash
+	infoMap, ok := buf_m_s_i["info"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("info field missing or invalid")
+	}
+
+	infoBytes, err := bencode.Marshal(infoMap)
+	if err != nil {
+		return fmt.Errorf("failed to marshal info dict: %v", err)
+	}
+
+	t.infohashStr = fmt.Sprintf("%x", sha1.Sum(infoBytes))
+
+	// Set attributes
+	t.name = infoMap["name"].(string)
+	t.length = infoMap["length"].(int64)
+	t.private = infoMap["private"].(int64) == 1 // assuming it's included
+	t.SetTracker()
+
+	// Handle files if they exist
+	if files, ok := infoMap["files"]; ok {
+		for _, file := range files.([]interface{}) {
+			fileMap := file.(map[string]interface{})
+			t.length += fileMap["length"].(int64)
+			for _, pathElement := range fileMap["path"].([]interface{}) {
+				t.contents = append(t.contents, pathElement.(string))
+			}
+		}
+	} else {
+		t.length = infoMap["length"].(int64)
+	}
+
+	return nil
 }
+
 func (t *Torrent) GetTracker() string {
 	return t.tracker
 }
+
 func (t *Torrent) GetFilePath() string {
 	return t.filepath
 }
+
 func (t *Torrent) GetLength() int64 {
 	return t.length
 }
+
 func (t *Torrent) GetName() string {
 	return t.name
 }
+
 func (t *Torrent) GetPrivate() bool {
 	return t.private
 }
+
 func (t *Torrent) GetInfohash() string {
-	return t.infohash
+	return t.infohashStr
 }
+
 func (t *Torrent) GetAnnouce() string {
 	return t.announce
 }
@@ -104,8 +116,6 @@ func (t *Torrent) SetTracker() {
 		t.scrape = strings.Replace(t.announce, "announce", "scrape", -1)
 	}
 }
-
-
 func OpenTfile(path string) ([]byte, bool) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -118,13 +128,37 @@ func OpenTfile(path string) ([]byte, bool) {
 	}
 	return b, true
 }
+
 func (t *Torrent) PrintTorrentInfo() {
 	fmt.Println("File: ", t.filepath)
 	fmt.Println("Name :", t.name)
 	fmt.Println("Size :", t.length)
 	fmt.Println("Tracker :", t.tracker)
-	fmt.Println("Infohash :", string(t.infohash))
+	fmt.Println("Infohash :", t.infohashStr)
 	fmt.Println("Announce :", t.announce)
 	fmt.Println("Scrape :", t.scrape)
 	fmt.Println("Private :", t.private)
+}
+
+func LoadTorrent(filePath string) (*Torrent, error) {
+	torrentData, isSuccess := OpenTfile(filePath)
+	if !isSuccess {
+		return nil, fmt.Errorf("failed to open file: %s", filePath)
+	}
+
+	torrent := &Torrent{}
+	torrent.UnmarshalTfBytes(torrentData)
+	return torrent, nil
+}
+
+func (t *Torrent) ToJSON() (string, error) {
+	data, err := json.Marshal(t)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (t *Torrent) OutputPeers() {
+	fmt.Println("Simulated peer list for", t.name)
 }
